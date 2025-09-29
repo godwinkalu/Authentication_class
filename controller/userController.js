@@ -315,3 +315,57 @@ exports.changePassword = async (req,res)=>{
     })
   }
 }
+exports.getAll = async (req,res)=>{
+
+  try {
+    const users = await userModel.find()
+
+    res.status(200).json({
+      message:`All users in the database and the total is:${users.length}`
+    })
+  } catch (error) {
+     res.status(500).json({
+      message:error.message
+    })
+  }
+}
+
+exports.changePassword = async (req,res)=>{
+
+  try {
+    // Get users ID 
+    const userId = req.user.id;
+    const {oldPassword,newPassword,confirmPassword} = req.body;
+    const user = await userModel.findById(userId)
+    if (!user) {
+      return res.status(404).json({
+        message:'user not found'
+      })
+    }
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({
+        message:'password is not correct'
+      })
+    }
+    const passwordCorrect = await bcrypt.compare(oldPassword,user.password)
+    if (!passwordCorrect) {
+      return res.status(400).json({
+        message:'Old password Incorrect'
+      })
+    }
+    const salt = await bcrypt.genSalt(10)
+    const hashedPassword = await bcrypt.hash(newPassword,salt)
+
+
+    user.password = hashedPassword
+    await user.save()
+
+    res.status(200).json({
+      message:'password changed successfuly'
+    })
+  } catch (error) {
+     res.status(500).json({
+      message:error.message
+    })
+  }
+}  
